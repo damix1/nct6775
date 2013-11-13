@@ -201,3 +201,13 @@ temperatures, and in some cases the reported temperature declines if the actual
 temperature increases (similar to the raw PECI temperature value - see PECI
 specification for details). CPUTIN should therefore be be ignored on ASUS
 boards. The CPU temperature on ASUS boards is reported from PECI 0.
+
+Also, there have been reports that not all fan speeds are reported on at least
+some ASUS boards. P9X79 WS is one example, where fan speed is only reported
+for two of the fans on the board.
+
+Note that ASUS does not support Linux on desktop boards (this appears to be
+official ASUS policy) and does not release board specifications, so there is
+nothing we can do to improve support for such boards unless we get board
+specifications or a detailed description on how to control the fans on the
+affected boards.
