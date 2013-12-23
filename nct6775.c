@@ -4016,10 +4016,28 @@ static int nct6775_suspend(struct device *dev)
 static int nct6775_resume(struct device *dev)
 {
 	struct nct6775_data *data = dev_get_drvdata(dev);
-	int i, j;
+	int i, j, err = 0;
 
 	mutex_lock(&data->update_lock);
 	data->bank = 0xff;		/* Force initial bank selection */
+
+	if (data->kind == nct6791) {
+		int val;
+
+		err = superio_enter(data->sioreg);
+		if (err)
+			goto abort;
+
+		val = superio_inb(data->sioreg,
+				  NCT6791_REG_HM_IO_SPACE_LOCK_ENABLE);
+		if (val & 0x10) {
+			pr_info("Re-enabling hardware monitor logical device mappings.\n");
+			superio_outb(data->sioreg,
+				     NCT6791_REG_HM_IO_SPACE_LOCK_ENABLE,
+				     val & ~0x10);
+		}
+		superio_exit(data->sioreg);
+	}
 
 	/* Restore limits */
 	for (i = 0; i < data->in_num; i++) {
@@ -4057,6 +4075,7 @@ static int nct6775_resume(struct device *dev)
 		nct6775_write_value(data, NCT6775_REG_FANDIV2, data->fandiv2);
 	}
 
+abort:
 	/* Force re-reading all values */
 	data->valid = false;
 	mutex_unlock(&data->update_lock);
