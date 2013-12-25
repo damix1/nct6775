@@ -3997,6 +3997,18 @@ static int nct6775_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static void nct6791_enable_io_mapping(int sioaddr)
+{
+	int val;
+
+	val = superio_inb(sioaddr, NCT6791_REG_HM_IO_SPACE_LOCK_ENABLE);
+	if (val & 0x10) {
+		pr_info("Enabling hardware monitor logical device mappings.\n");
+		superio_outb(sioaddr, NCT6791_REG_HM_IO_SPACE_LOCK_ENABLE,
+			     val & ~0x10);
+	}
+}
+
 #ifdef CONFIG_PM
 static int nct6775_suspend(struct device *dev)
 {
@@ -4022,20 +4034,11 @@ static int nct6775_resume(struct device *dev)
 	data->bank = 0xff;		/* Force initial bank selection */
 
 	if (data->kind == nct6791) {
-		int val;
-
 		err = superio_enter(data->sioreg);
 		if (err)
 			goto abort;
 
-		val = superio_inb(data->sioreg,
-				  NCT6791_REG_HM_IO_SPACE_LOCK_ENABLE);
-		if (val & 0x10) {
-			pr_info("Re-enabling hardware monitor logical device mappings.\n");
-			superio_outb(data->sioreg,
-				     NCT6791_REG_HM_IO_SPACE_LOCK_ENABLE,
-				     val & ~0x10);
-		}
+		nct6791_enable_io_mapping(data->sioreg);
 		superio_exit(data->sioreg);
 	}
 
@@ -4086,6 +4089,8 @@ abort:
 static const struct dev_pm_ops nct6775_dev_pm_ops = {
 	.suspend = nct6775_suspend,
 	.resume = nct6775_resume,
+	.freeze = nct6775_suspend,
+	.restore = nct6775_resume,
 };
 
 #define NCT6775_DEV_PM_OPS	(&nct6775_dev_pm_ops)
@@ -4167,15 +4172,8 @@ static int __init nct6775_find(int sioaddr, struct nct6775_sio_data *sio_data)
 		pr_warn("Forcibly enabling Super-I/O. Sensor is probably unusable.\n");
 		superio_outb(sioaddr, SIO_REG_ENABLE, val | 0x01);
 	}
-	if (sio_data->kind == nct6791) {
-		val = superio_inb(sioaddr, NCT6791_REG_HM_IO_SPACE_LOCK_ENABLE);
-		if (val & 0x10) {
-			pr_info("Enabling hardware monitor logical device mappings.\n");
-			superio_outb(sioaddr,
-				     NCT6791_REG_HM_IO_SPACE_LOCK_ENABLE,
-				     val & ~0x10);
-		}
-	}
+	if (sio_data->kind == nct6791)
+		nct6791_enable_io_mapping(sioaddr);
 
 	superio_exit(sioaddr);
 	pr_info("Found %s or compatible chip at %#x:%#x\n",
