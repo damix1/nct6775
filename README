@@ -211,3 +211,9 @@ official ASUS policy) and does not release board specifications, so there is
 nothing we can do to improve support for such boards unless we get board
 specifications or a detailed description on how to control the fans on the
 affected boards.
+
+Known Problems
+--------------
+
+After a suspend/resume cycle, all fan control settings are restored to the BIOS
+defaults.
