@@ -4,11 +4,11 @@ Note
 This driver supercedes the NCT6775F and NCT6776F support in the W83627EHF
 driver. It supports NCT6106D, NCT6775F, NCT6776F, NCT6779D, and NCT6791D.
 
-The driver should be in shape for upstream integration, and has been submitted
-to the lm-sensors mailing list for that purpose. Testing and review feedback
-will be required for the driver to be actually integrated. If you use the latest
-version of this driver, and/or if you can provide review feedback, please let
-the author know.
+The driver is also available in the upstream kernel. This version is maintained
+for backward compatibility with older kernels. I am trying to keep it buildable
+for older kernels, but may miss a problem once in a while. If you have a problem
+compiling this driver with any kernel version 2.6.16 or later, please let me
+know. 
 
 Kernel driver NCT6775
 =======================
