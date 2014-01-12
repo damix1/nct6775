@@ -7,6 +7,18 @@
 #error This driver is for kernel versions 2.6.16 and later
 #endif
 
+#if !defined (CONFIG_HWMON_VID) && !defined(CONFIG_HWMON_VID_MODULE)
+int vid_from_reg(int val, u8 vrm)
+{
+	return 0;
+}
+
+u8 vid_which_vrm(void)
+{
+	return 0;
+}
+#endif
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 12, 0)
 static int sysfs_create_groups(struct kobject *kobj,
 			       const struct attribute_group **groups)
