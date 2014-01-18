@@ -61,6 +61,8 @@ static inline int __must_check PTR_ERR_OR_ZERO(__force const void *ptr)
 
 #endif
 
+#ifdef __NEED_I2C__
+
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 21)
 #if !(defined RHEL_MAJOR && RHEL_MAJOR == 5 && RHEL_MINOR >= 6)
 /* Simplified version for compatibility */
@@ -91,6 +93,23 @@ static struct i2c_client_address_data addr_data = {
 };
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 2, 0)
+static inline s32
+i2c_smbus_read_word_swapped(const struct i2c_client *client, u8 command)
+{
+	s32 value = i2c_smbus_read_word_data(client, command);
+
+	return (value < 0) ? value : swab16(value);
+}
+
+static inline s32
+i2c_smbus_write_word_swapped(const struct i2c_client *client,
+			     u8 command, u16 value)
+{
+	return i2c_smbus_write_word_data(client, command, swab16(value));
+}
+#endif
+
 /* Red Hat EL5 includes backports of these functions, so we can't redefine
  * our own. */
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 24)
@@ -110,6 +129,8 @@ static inline int strict_strtol(const char *cp, unsigned int base, long *res)
 #endif
 #endif
 
+#endif	/* __NEED_I2C__ */
+
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 28)
 /*
  * Divide positive or negative dividend by positive divisor and round
@@ -126,23 +147,6 @@ static inline int strict_strtol(const char *cp, unsigned int base, long *res)
 		(((__x) - ((__d) / 2)) / (__d));	\
 }							\
 )
-#endif
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 2, 0)
-static inline s32
-i2c_smbus_read_word_swapped(const struct i2c_client *client, u8 command)
-{
-	s32 value = i2c_smbus_read_word_data(client, command);
-
-	return (value < 0) ? value : swab16(value);
-}
-
-static inline s32
-i2c_smbus_write_word_swapped(const struct i2c_client *client,
-			     u8 command, u16 value)
-{
-	return i2c_smbus_write_word_data(client, command, swab16(value));
-}
 #endif
 
 #ifndef module_driver
@@ -173,6 +177,8 @@ static void __exit __driver##_exit(void) \
 module_exit(__driver##_exit);
 #endif
 
+#ifdef __NEED_I2C__
+
 #ifndef module_i2c_driver
 /**
  * module_i2c_driver() - Helper macro for registering a I2C driver
@@ -186,6 +192,8 @@ module_exit(__driver##_exit);
 	module_driver(__i2c_driver, i2c_add_driver, \
 			i2c_del_driver)
 #endif
+
+#endif /* __NEED_I2C__ */
 
 #ifndef clamp_val
 #define clamp_val SENSORS_LIMIT
