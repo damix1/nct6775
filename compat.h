@@ -208,6 +208,8 @@ module_exit(__driver##_exit);
 
 #ifndef request_muxed_region
 #define request_muxed_region(a, b, c) (true)
+#endif
+#ifndef release_region
 #define release_region(a, b)
 #endif
 
