@@ -213,4 +213,12 @@ module_exit(__driver##_exit);
 #define release_region(a, b)
 #endif
 
+#ifndef pr_warn
+/* pr_warn macro not introduced until 2.6.35 */
+#define pr_warn pr_warning
+#endif
+#ifndef pr_warn_ratelimited
+#define pr_warn_ratelimited pr_warning_ratelimited
+#endif
+
 #endif /* __COMPAT_H */
