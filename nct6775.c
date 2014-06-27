@@ -38,6 +38,7 @@
  * nct6776f     9      5       3       6+3    0xc330 0xc1    0x5ca3
  * nct6779d    15      5       5       2+6    0xc560 0xc1    0x5ca3
  * nct6791d    15      6       6       2+6    0xc800 0xc1    0x5ca3
+ * nct6792d    15      6       6       2+6    0xc911 0xc1    0x5ca3
  *
  * #temp lists the number of monitored temperature sources (first value) plus
  * the number of directly connectable temperature sensors (second value).
@@ -62,7 +63,7 @@
 
 #define USE_ALTERNATE
 
-enum kinds { nct6106, nct6775, nct6776, nct6779, nct6791 };
+enum kinds { nct6106, nct6775, nct6776, nct6779, nct6791, nct6792 };
 
 /* used to set data->name = nct6775_device_names[data->sio_kind] */
 static const char * const nct6775_device_names[] = {
@@ -71,6 +72,7 @@ static const char * const nct6775_device_names[] = {
 	"nct6776",
 	"nct6779",
 	"nct6791",
+	"nct6792",
 };
 
 static unsigned short force_id;
@@ -101,6 +103,7 @@ MODULE_PARM_DESC(fan_debounce, "Enable debouncing for fan RPM signal");
 #define SIO_NCT6776_ID		0xc330
 #define SIO_NCT6779_ID		0xc560
 #define SIO_NCT6791_ID		0xc800
+#define SIO_NCT6792_ID		0xc910
 #define SIO_ID_MASK		0xFFF0
 
 enum pwm_enable { off, manual, thermal_cruise, speed_cruise, sf3, sf4 };
@@ -1049,6 +1052,7 @@ static bool is_word_sized(struct nct6775_data *data, u16 reg)
 		  reg == 0x73 || reg == 0x75 || reg == 0x77;
 	case nct6779:
 	case nct6791:
+	case nct6792:
 		return reg == 0x150 || reg == 0x153 || reg == 0x155 ||
 		  ((reg & 0xfff0) == 0x4b0 && (reg & 0x000f) < 0x0b) ||
 		  reg == 0x402 ||
@@ -1397,6 +1401,7 @@ static void nct6775_update_pwm_limits(struct device *dev)
 		case nct6106:
 		case nct6779:
 		case nct6791:
+		case nct6792:
 			reg = nct6775_read_value(data,
 					data->REG_CRITICAL_PWM_ENABLE[i]);
 			if (reg & data->CRITICAL_PWM_ENABLE_MASK)
@@ -2808,6 +2813,7 @@ store_auto_pwm(struct device *dev, struct device_attribute *attr,
 		case nct6106:
 		case nct6779:
 		case nct6791:
+		case nct6792:
 			nct6775_write_value(data, data->REG_CRITICAL_PWM[nr],
 					    val);
 			reg = nct6775_read_value(data,
@@ -3221,7 +3227,7 @@ nct6775_check_fan_inputs(struct nct6775_data *data)
 		pwm4pin = false;
 		pwm5pin = false;
 		pwm6pin = false;
-	} else {	/* NCT6779D or NCT6791D */
+	} else {	/* NCT6779D, NCT6791D, or NCT6792D */
 		regval = superio_inb(sioreg, 0x1c);
 
 		fan3pin = !(regval & (1 << 5));
@@ -3234,7 +3240,7 @@ nct6775_check_fan_inputs(struct nct6775_data *data)
 
 		fan4min = fan4pin;
 
-		if (data->kind == nct6791) {
+		if (data->kind == nct6791 || data->kind == nct6792) {
 			regval = superio_inb(sioreg, 0x2d);
 			fan6pin = (regval & (1 << 1));
 			pwm6pin = (regval & (1 << 0));
@@ -3606,6 +3612,7 @@ static int nct6775_probe(struct platform_device *pdev)
 
 		break;
 	case nct6791:
+	case nct6792:
 		data->in_num = 15;
 		data->pwm_num = 6;
 		data->auto_pwm_num = 4;
@@ -3872,6 +3879,7 @@ static int nct6775_probe(struct platform_device *pdev)
 	case nct6106:
 	case nct6779:
 	case nct6791:
+	case nct6792:
 		break;
 	}
 
@@ -3903,6 +3911,7 @@ static int nct6775_probe(struct platform_device *pdev)
 			tmp |= 0x3e;
 			break;
 		case nct6791:
+		case nct6792:
 			tmp |= 0x7e;
 			break;
 		}
@@ -4013,7 +4022,7 @@ static int nct6775_resume(struct device *dev)
 	mutex_lock(&data->update_lock);
 	data->bank = 0xff;		/* Force initial bank selection */
 
-	if (data->kind == nct6791) {
+	if (data->kind == nct6791 || data->kind == nct6792) {
 		err = superio_enter(data->sioreg);
 		if (err)
 			goto abort;
@@ -4096,6 +4105,7 @@ static const char * const nct6775_sio_names[] __initconst = {
 	"NCT6776D/F",
 	"NCT6779D",
 	"NCT6791D",
+	"NCT6792D",
 };
 
 /* nct6775_find() looks for a '627 in the Super-I/O config space */
@@ -4130,6 +4140,9 @@ static int __init nct6775_find(int sioaddr, struct nct6775_sio_data *sio_data)
 	case SIO_NCT6791_ID:
 		sio_data->kind = nct6791;
 		break;
+	case SIO_NCT6792_ID:
+		sio_data->kind = nct6792;
+		break;
 	default:
 		if (val != 0xffff)
 			pr_debug("unsupported chip ID: 0x%04x\n", val);
@@ -4155,7 +4168,7 @@ static int __init nct6775_find(int sioaddr, struct nct6775_sio_data *sio_data)
 		superio_outb(sioaddr, SIO_REG_ENABLE, val | 0x01);
 	}
 
-	if (sio_data->kind == nct6791)
+	if (sio_data->kind == nct6791 || sio_data->kind == nct6792)
 		nct6791_enable_io_mapping(sioaddr);
 
 	superio_exit(sioaddr);
