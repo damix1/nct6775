@@ -182,12 +182,6 @@ pwm[1-5]_auto_point[1-5]_temp
 			Temperature at which the matching pwm is enabled.
 pwm[1-5]_step_up_time	milliseconds [ms] before fan speed is increased
 pwm[1-5]_step_down_time	milliseconds [ms] before fan speed is decreased
-pwm[1-5]_step_enable	Set to 1 to enable fine grain speed control.
-			If disabled, pwm values will increase or decrease to
-			the values configured in the auto_point_pwm attributes.
-			If enabled, pwm values will be interpolated, resulting
-			in a more fine-grained fan control, resulting in a more
-			fine-grained fan control
 
 
 Usage Notes
