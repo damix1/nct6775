@@ -533,6 +533,10 @@ static const s8 NCT6791_ALARM_BITS[] = {
 	4, 5, 13, -1, -1, -1,		/* temp1..temp6 */
 	12, 9 };			/* intrusion0, intrusion1 */
 
+/* NCT6792 specific data */
+
+static const u16 NCT6792_REG_TEMP_MON[] = { 0x73, 0x75, 0x77, 0x79, 0x7b, 0x7d };
+static const u16 NCT6792_REG_BEEP[NUM_REG_BEEP] = { 0xb2, 0xb3, 0xb4, 0xb5, 0xbf };
 
 /* NCT6102D/NCT6106D specific data */
 
@@ -1059,7 +1063,7 @@ static bool is_word_sized(struct nct6775_data *data, u16 reg)
 		  reg == 0x63a || reg == 0x63c || reg == 0x63e ||
 		  reg == 0x640 || reg == 0x642 ||
 		  reg == 0x73 || reg == 0x75 || reg == 0x77 || reg == 0x79 ||
-		  reg == 0x7b;
+		  reg == 0x7b || reg == 0x7d;
 	}
 	return false;
 }
@@ -3675,12 +3679,20 @@ static int nct6775_probe(struct platform_device *pdev)
 		data->REG_WEIGHT_TEMP[1] = NCT6791_REG_WEIGHT_TEMP_STEP_TOL;
 		data->REG_WEIGHT_TEMP[2] = NCT6791_REG_WEIGHT_TEMP_BASE;
 		data->REG_ALARM = NCT6791_REG_ALARM;
-		data->REG_BEEP = NCT6776_REG_BEEP;
+		if (data->kind == nct6791)
+			data->REG_BEEP = NCT6776_REG_BEEP;
+		else
+			data->REG_BEEP = NCT6792_REG_BEEP;
 
 		reg_temp = NCT6779_REG_TEMP;
-		reg_temp_mon = NCT6779_REG_TEMP_MON;
 		num_reg_temp = ARRAY_SIZE(NCT6779_REG_TEMP);
-		num_reg_temp_mon = ARRAY_SIZE(NCT6779_REG_TEMP_MON);
+		if (data->kind == nct6791) {
+			reg_temp_mon = NCT6779_REG_TEMP_MON;
+			num_reg_temp_mon = ARRAY_SIZE(NCT6779_REG_TEMP_MON);
+		} else {
+			reg_temp_mon = NCT6792_REG_TEMP_MON;
+			num_reg_temp_mon = ARRAY_SIZE(NCT6792_REG_TEMP_MON);
+		}
 		reg_temp_over = NCT6779_REG_TEMP_OVER;
 		reg_temp_hyst = NCT6779_REG_TEMP_HYST;
 		reg_temp_config = NCT6779_REG_TEMP_CONFIG;
