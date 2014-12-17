@@ -5,7 +5,7 @@
  * Copyright (C) 2012  Guenter Roeck <linux@roeck-us.net>
  *
  * Derived from w83627ehf driver
- * Copyright (C) 2005-2012  Jean Delvare <khali@linux-fr.org>
+ * Copyright (C) 2005-2012  Jean Delvare <jdelvare@suse.de>
  * Copyright (C) 2006  Yuan Mu (Winbond),
  *		       Rudolf Marek <r.marek@assembler.cz>
  *		       David Hubbard <david.c.hubbard@gmail.com>
@@ -535,8 +535,10 @@ static const s8 NCT6791_ALARM_BITS[] = {
 
 /* NCT6792 specific data */
 
-static const u16 NCT6792_REG_TEMP_MON[] = { 0x73, 0x75, 0x77, 0x79, 0x7b, 0x7d };
-static const u16 NCT6792_REG_BEEP[NUM_REG_BEEP] = { 0xb2, 0xb3, 0xb4, 0xb5, 0xbf };
+static const u16 NCT6792_REG_TEMP_MON[] = {
+	0x73, 0x75, 0x77, 0x79, 0x7b, 0x7d };
+static const u16 NCT6792_REG_BEEP[NUM_REG_BEEP] = {
+	0xb2, 0xb3, 0xb4, 0xb5, 0xbf };
 
 /* NCT6102D/NCT6106D specific data */
 
@@ -747,7 +749,6 @@ struct nct6775_data {
 	struct device *hwmon_dev;
 #endif
 
-	int num_attr_groups;
 	const struct attribute_group *groups[6];
 
 	u16 reg_temp[5][NUM_TEMP]; /* 0=temp, 1=temp_over, 2=temp_hyst,
@@ -1077,6 +1078,7 @@ static bool is_word_sized(struct nct6775_data *data, u16 reg)
 static inline void nct6775_set_bank(struct nct6775_data *data, u16 reg)
 {
 	u8 bank = reg >> 8;
+
 	if (data->bank != bank) {
 		outb_p(NCT6775_REG_BANK, data->addr + ADDR_REG_OFFSET);
 		outb_p(bank, data->addr + DATA_REG_OFFSET);
@@ -1314,6 +1316,7 @@ static void nct6775_update_pwm(struct device *dev)
 		if (!data->target_speed_tolerance[i] ||
 		    data->pwm_enable[i] == speed_cruise) {
 			u8 t = fanmodecfg & 0x0f;
+
 			if (data->REG_TOLERANCE_H) {
 				t |= (nct6775_read_value(data,
 				      data->REG_TOLERANCE_H[i]) & 0x70) >> 1;
@@ -1488,6 +1491,7 @@ static struct nct6775_data *nct6775_update_device(struct device *dev)
 		data->alarms = 0;
 		for (i = 0; i < NUM_REG_ALARM; i++) {
 			u8 alarm;
+
 			if (!data->REG_ALARM[i])
 				continue;
 			alarm = nct6775_read_value(data, data->REG_ALARM[i]);
@@ -1497,6 +1501,7 @@ static struct nct6775_data *nct6775_update_device(struct device *dev)
 		data->beeps = 0;
 		for (i = 0; i < NUM_REG_BEEP; i++) {
 			u8 beep;
+
 			if (!data->REG_BEEP[i])
 				continue;
 			beep = nct6775_read_value(data, data->REG_BEEP[i]);
@@ -1519,8 +1524,9 @@ show_in_reg(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct nct6775_data *data = nct6775_update_device(dev);
 	struct sensor_device_attribute_2 *sattr = to_sensor_dev_attr_2(attr);
-	int nr = sattr->nr;
 	int index = sattr->index;
+	int nr = sattr->nr;
+
 	return sprintf(buf, "%ld\n", in_from_reg(data->in[nr][index], nr));
 }
 
@@ -1530,10 +1536,12 @@ store_in_reg(struct device *dev, struct device_attribute *attr, const char *buf,
 {
 	struct nct6775_data *data = dev_get_drvdata(dev);
 	struct sensor_device_attribute_2 *sattr = to_sensor_dev_attr_2(attr);
-	int nr = sattr->nr;
 	int index = sattr->index;
+	int nr = sattr->nr;
 	unsigned long val;
-	int err = kstrtoul(buf, 10, &val);
+	int err;
+
+	err = kstrtoul(buf, 10, &val);
 	if (err < 0)
 		return err;
 	mutex_lock(&data->update_lock);
@@ -1550,6 +1558,7 @@ show_alarm(struct device *dev, struct device_attribute *attr, char *buf)
 	struct nct6775_data *data = nct6775_update_device(dev);
 	struct sensor_device_attribute *sattr = to_sensor_dev_attr(attr);
 	int nr = data->ALARM_BITS[sattr->index];
+
 	return sprintf(buf, "%u\n",
 		       (unsigned int)((data->alarms >> nr) & 0x01));
 }
@@ -1585,6 +1594,7 @@ show_temp_alarm(struct device *dev, struct device_attribute *attr, char *buf)
 	nr = find_temp_source(data, sattr->index, data->num_temp_alarms);
 	if (nr >= 0) {
 		int bit = data->ALARM_BITS[nr + TEMP_ALARM_BASE];
+
 		alarm = (data->alarms >> bit) & 0x01;
 	}
 	return sprintf(buf, "%u\n", alarm);
@@ -1610,8 +1620,9 @@ store_beep(struct device *dev, struct device_attribute *attr, const char *buf,
 	int nr = data->BEEP_BITS[sattr->index];
 	int regindex = nr >> 3;
 	unsigned long val;
+	int err;
 
-	int err = kstrtoul(buf, 10, &val);
+	err = kstrtoul(buf, 10, &val);
 	if (err < 0)
 		return err;
 	if (val > 1)
@@ -1644,6 +1655,7 @@ show_temp_beep(struct device *dev, struct device_attribute *attr, char *buf)
 	nr = find_temp_source(data, sattr->index, data->num_temp_beeps);
 	if (nr >= 0) {
 		int bit = data->BEEP_BITS[nr + TEMP_ALARM_BASE];
+
 		beep = (data->beeps >> bit) & 0x01;
 	}
 	return sprintf(buf, "%u\n", beep);
@@ -1657,8 +1669,9 @@ store_temp_beep(struct device *dev, struct device_attribute *attr,
 	struct nct6775_data *data = dev_get_drvdata(dev);
 	int nr, bit, regindex;
 	unsigned long val;
+	int err;
 
-	int err = kstrtoul(buf, 10, &val);
+	err = kstrtoul(buf, 10, &val);
 	if (err < 0)
 		return err;
 	if (val > 1)
@@ -1730,6 +1743,7 @@ show_fan(struct device *dev, struct device_attribute *attr, char *buf)
 	struct nct6775_data *data = nct6775_update_device(dev);
 	struct sensor_device_attribute *sattr = to_sensor_dev_attr(attr);
 	int nr = sattr->index;
+
 	return sprintf(buf, "%d\n", data->rpm[nr]);
 }
 
@@ -1739,6 +1753,7 @@ show_fan_min(struct device *dev, struct device_attribute *attr, char *buf)
 	struct nct6775_data *data = nct6775_update_device(dev);
 	struct sensor_device_attribute *sattr = to_sensor_dev_attr(attr);
 	int nr = sattr->index;
+
 	return sprintf(buf, "%d\n",
 		       data->fan_from_reg_min(data->fan_min[nr],
 					      data->fan_div[nr]));
@@ -1750,6 +1765,7 @@ show_fan_div(struct device *dev, struct device_attribute *attr, char *buf)
 	struct nct6775_data *data = nct6775_update_device(dev);
 	struct sensor_device_attribute *sattr = to_sensor_dev_attr(attr);
 	int nr = sattr->index;
+
 	return sprintf(buf, "%u\n", div_from_reg(data->fan_div[nr]));
 }
 
@@ -1761,9 +1777,9 @@ store_fan_min(struct device *dev, struct device_attribute *attr,
 	struct sensor_device_attribute *sattr = to_sensor_dev_attr(attr);
 	int nr = sattr->index;
 	unsigned long val;
-	int err;
 	unsigned int reg;
 	u8 new_div;
+	int err;
 
 	err = kstrtoul(buf, 10, &val);
 	if (err < 0)
@@ -1947,6 +1963,7 @@ show_temp_label(struct device *dev, struct device_attribute *attr, char *buf)
 	struct nct6775_data *data = nct6775_update_device(dev);
 	struct sensor_device_attribute *sattr = to_sensor_dev_attr(attr);
 	int nr = sattr->index;
+
 	return sprintf(buf, "%s\n", data->temp_label[data->temp_src[nr]]);
 }
 
@@ -2023,6 +2040,7 @@ show_temp_type(struct device *dev, struct device_attribute *attr, char *buf)
 	struct nct6775_data *data = nct6775_update_device(dev);
 	struct sensor_device_attribute *sattr = to_sensor_dev_attr(attr);
 	int nr = sattr->index;
+
 	return sprintf(buf, "%d\n", (int)data->temp_type[nr]);
 }
 
@@ -3011,6 +3029,7 @@ static struct sensor_device_template *nct6775_attributes_pwm_template[] = {
 	&sensor_dev_template_pwm_auto_point6_temp,
 	&sensor_dev_template_pwm_auto_point7_pwm,
 	&sensor_dev_template_pwm_auto_point7_temp,	/* 35 */
+
 	NULL
 };
 
@@ -3024,6 +3043,7 @@ static ssize_t
 show_vid(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct nct6775_data *data = dev_get_drvdata(dev);
+
 	return sprintf(buf, "%d\n", vid_from_reg(data->vid, data->vrm));
 }
 
@@ -3304,6 +3324,7 @@ static int nct6775_probe(struct platform_device *pdev)
 	u8 cr2a;
 	struct attribute_group *group;
 	struct device *hwmon_dev;
+	int num_attr_groups = 0;
 
 	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
 	if (!devm_request_region(&pdev->dev, res->start, IOREGION_LENGTH,
@@ -3946,34 +3967,34 @@ static int nct6775_probe(struct platform_device *pdev)
 	if (IS_ERR(group))
 		return PTR_ERR(group);
 
-	data->groups[data->num_attr_groups++] = group;
+	data->groups[num_attr_groups++] = group;
 
 	group = nct6775_create_attr_group(dev, &nct6775_in_template_group,
 					  fls(data->have_in));
 	if (IS_ERR(group))
 		return PTR_ERR(group);
 
-	data->groups[data->num_attr_groups++] = group;
+	data->groups[num_attr_groups++] = group;
 
 	group = nct6775_create_attr_group(dev, &nct6775_fan_template_group,
 					  fls(data->has_fan));
 	if (IS_ERR(group))
 		return PTR_ERR(group);
 
-	data->groups[data->num_attr_groups++] = group;
+	data->groups[num_attr_groups++] = group;
 
 	group = nct6775_create_attr_group(dev, &nct6775_temp_template_group,
 					  fls(data->have_temp));
 	if (IS_ERR(group))
 		return PTR_ERR(group);
 
-	data->groups[data->num_attr_groups++] = group;
-	data->groups[data->num_attr_groups++] = &nct6775_group_other;
+	data->groups[num_attr_groups++] = group;
+	data->groups[num_attr_groups++] = &nct6775_group_other;
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 13, 0)
 	err = sysfs_create_groups(&dev->kobj, data->groups);
 	if (err < 0)
-	 	return err;
+		return err;
 	hwmon_dev = hwmon_device_register(dev);
 	if (IS_ERR(hwmon_dev)) {
 		sysfs_remove_groups(&dev->kobj, data->groups);
@@ -4229,7 +4250,7 @@ static int __init sensors_nct6775_init(void)
 		pdev[i] = platform_device_alloc(DRVNAME, address);
 		if (!pdev[i]) {
 			err = -ENOMEM;
-			goto exit_device_put;
+			goto exit_device_unregister;
 		}
 
 		err = platform_device_add_data(pdev[i], &sio_data,
@@ -4267,9 +4288,11 @@ static int __init sensors_nct6775_init(void)
 	return 0;
 
 exit_device_put:
-	for (i = 0; i < ARRAY_SIZE(pdev); i++) {
+	platform_device_put(pdev[i]);
+exit_device_unregister:
+	while (--i >= 0) {
 		if (pdev[i])
-			platform_device_put(pdev[i]);
+			platform_device_unregister(pdev[i]);
 	}
 exit_unregister:
 	platform_driver_unregister(&nct6775_driver);
@@ -4288,7 +4311,7 @@ static void __exit sensors_nct6775_exit(void)
 }
 
 MODULE_AUTHOR("Guenter Roeck <linux@roeck-us.net>");
-MODULE_DESCRIPTION("NCT6775F/NCT6776F/NCT6779D driver");
+MODULE_DESCRIPTION("NCT6106D/NCT6775F/NCT6776F/NCT6779D/NCT6791D/NCT6792D driver");
 MODULE_LICENSE("GPL");
 
 module_init(sensors_nct6775_init);
