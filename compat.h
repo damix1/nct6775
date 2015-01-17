@@ -3,8 +3,8 @@
 
 #include <linux/version.h>
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 16)
-#error This driver is for kernel versions 2.6.16 and later
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 32)
+#error This driver is for kernel versions 2.6.32 and later
 #endif
 
 #if !defined (CONFIG_HWMON_VID) && !defined(CONFIG_HWMON_VID_MODULE)
