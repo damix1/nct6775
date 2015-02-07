@@ -890,6 +890,7 @@ struct nct6775_data {
 	u8 vbat;
 	u8 fandiv1;
 	u8 fandiv2;
+	u8 sio_enable;
 #endif
 };
 
@@ -3218,6 +3219,8 @@ nct6775_check_fan_inputs(struct nct6775_data *data)
 		superio_select(sioreg, NCT6775_LD_HWM);
 		regval = superio_inb(sioreg, SIO_REG_ENABLE);
 
+		data->sio_enable = regval;
+
 		if (regval & 0x80)
 			fan3pin = gpok;
 		else
@@ -4050,19 +4053,26 @@ static int nct6775_suspend(struct device *dev)
 static int nct6775_resume(struct device *dev)
 {
 	struct nct6775_data *data = dev_get_drvdata(dev);
+	int sioreg = data->sioreg;
 	int i, j, err = 0;
+	u8 reg;
 
 	mutex_lock(&data->update_lock);
 	data->bank = 0xff;		/* Force initial bank selection */
 
-	if (data->kind == nct6791 || data->kind == nct6792) {
-		err = superio_enter(data->sioreg);
-		if (err)
-			goto abort;
+	err = superio_enter(sioreg);
+	if (err)
+		goto abort;
 
-		nct6791_enable_io_mapping(data->sioreg);
-		superio_exit(data->sioreg);
-	}
+	superio_select(sioreg, NCT6775_LD_HWM);
+	reg = superio_inb(sioreg, SIO_REG_ENABLE);
+	if (reg != data->sio_enable)
+		superio_outb(sioreg, SIO_REG_ENABLE, data->sio_enable);
+
+	if (data->kind == nct6791 || data->kind == nct6792)
+		nct6791_enable_io_mapping(sioreg);
+
+	superio_exit(sioreg);
 
 	/* Restore limits */
 	for (i = 0; i < data->in_num; i++) {
