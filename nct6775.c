@@ -57,7 +57,6 @@
 #include <linux/err.h>
 #include <linux/mutex.h>
 #include <linux/acpi.h>
-#include <linux/dmi.h>
 #include <linux/io.h>
 #include "lm75.h"
 #include "compat.h"
@@ -3216,26 +3215,9 @@ nct6775_check_fan_inputs(struct nct6775_data *data)
 		pwm6pin = false;
 	} else if (data->kind == nct6776) {
 		bool gpok = superio_inb(sioreg, 0x27) & 0x80;
-		const char *board_vendor, *board_name;
-
-		board_vendor = dmi_get_system_info(DMI_BOARD_VENDOR);
-		board_name = dmi_get_system_info(DMI_BOARD_NAME);
 
 		superio_select(sioreg, NCT6775_LD_HWM);
 		regval = superio_inb(sioreg, SIO_REG_ENABLE);
-
-		/*
-		 * ASRock Z77 Pro4-M is known to not enable fan 3..5
-		 * if booted in UEFI Ultra-FastBoot mode.
-		 */
-		if (!strcmp(board_vendor, "ASRock") &&
-		    !strcmp(board_name, "Z77 Pro4-M")) {
-			if ((regval & 0xe0) != 0xe0) {
-				pr_warn("Enabling Fans 3-5\n");
-				regval |= 0xe0;
-				superio_outb(sioreg, SIO_REG_ENABLE, regval);
-			}
-		}
 
 		data->sio_enable = regval;
 
