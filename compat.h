@@ -20,6 +20,7 @@ u8 vid_which_vrm(void)
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 12, 0)
+#if !(defined RHEL_MAJOR && RHEL_MAJOR == 6 && RHEL_MINOR >= 7)
 static int sysfs_create_groups(struct kobject *kobj,
 			       const struct attribute_group **groups)
 {
@@ -39,6 +40,7 @@ static int sysfs_create_groups(struct kobject *kobj,
 	}
 	return error;
 }
+#endif
 
 static void sysfs_remove_groups(struct kobject *kobj,
 				const struct attribute_group **groups)
@@ -51,6 +53,7 @@ static void sysfs_remove_groups(struct kobject *kobj,
 		sysfs_remove_group(kobj, groups[i]);
 }
 
+#if !(defined RHEL_MAJOR && RHEL_MAJOR == 6 && RHEL_MINOR >= 7)
 static inline int __must_check PTR_ERR_OR_ZERO(__force const void *ptr)
 {
 	if (IS_ERR(ptr))
@@ -58,7 +61,7 @@ static inline int __must_check PTR_ERR_OR_ZERO(__force const void *ptr)
 	else
 		return 0;
 }
-
+#endif
 #endif
 
 #ifdef __NEED_I2C__
