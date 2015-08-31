@@ -39,7 +39,7 @@
  * nct6779d    15      5       5       2+6    0xc560 0xc1    0x5ca3
  * nct6791d    15      6       6       2+6    0xc800 0xc1    0x5ca3
  * nct6792d    15      6       6       2+6    0xc911 0xc1    0x5ca3
- * nct6793d    15      6       6       2+6    0xd110 0xc1    0x5ca3
+ * nct6793d    15      6       6       2+6    0xd120 0xc1    0x5ca3
  *
  * #temp lists the number of monitored temperature sources (first value) plus
  * the number of directly connectable temperature sensors (second value).
@@ -107,7 +107,7 @@ MODULE_PARM_DESC(fan_debounce, "Enable debouncing for fan RPM signal");
 #define SIO_NCT6779_ID		0xc560
 #define SIO_NCT6791_ID		0xc800
 #define SIO_NCT6792_ID		0xc910
-#define SIO_NCT6793_ID		0xd110
+#define SIO_NCT6793_ID		0xd120
 #define SIO_ID_MASK		0xFFF0
 
 enum pwm_enable { off, manual, thermal_cruise, speed_cruise, sf3, sf4 };
