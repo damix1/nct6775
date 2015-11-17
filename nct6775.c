@@ -38,7 +38,7 @@
  * nct6776f     9      5       3       6+3    0xc330 0xc1    0x5ca3
  * nct6779d    15      5       5       2+6    0xc560 0xc1    0x5ca3
  * nct6791d    15      6       6       2+6    0xc800 0xc1    0x5ca3
- * nct6792d    15      6       6       2+6    0xc911 0xc1    0x5ca3
+ * nct6792d    15      6       6       2+6    0xc910 0xc1    0x5ca3
  * nct6793d    15      6       6       2+6    0xd120 0xc1    0x5ca3
  *
  * #temp lists the number of monitored temperature sources (first value) plus
