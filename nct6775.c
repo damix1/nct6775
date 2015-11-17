@@ -266,7 +266,6 @@ static const u16 NCT6775_REG_TARGET[] = {
 	0x101, 0x201, 0x301, 0x801, 0x901, 0xa01 };
 static const u16 NCT6775_REG_FAN_MODE[] = {
 	0x102, 0x202, 0x302, 0x802, 0x902, 0xa02 };
-/* STEP_DOWN_TIME and STEP_UP_TIME regs are swapped for all chips but NCT6775 */
 static const u16 NCT6775_REG_FAN_STEP_DOWN_TIME[] = {
 	0x103, 0x203, 0x303, 0x803, 0x903, 0xa03 };
 static const u16 NCT6775_REG_FAN_STEP_UP_TIME[] = {
@@ -368,6 +367,10 @@ static const u16 NCT6775_REG_TEMP_CRIT[ARRAY_SIZE(nct6775_temp_label) - 1]
 	    0xa07 };
 
 /* NCT6776 specific data */
+
+/* STEP_UP_TIME and STEP_DOWN_TIME regs are swapped for all chips but NCT6775 */
+#define NCT6776_REG_FAN_STEP_UP_TIME NCT6775_REG_FAN_STEP_DOWN_TIME
+#define NCT6776_REG_FAN_STEP_DOWN_TIME NCT6775_REG_FAN_STEP_UP_TIME
 
 static const s8 NCT6776_ALARM_BITS[] = {
 	0, 1, 2, 3, 8, 21, 20, 16,	/* in0.. in7 */
@@ -1022,6 +1025,7 @@ nct6775_create_attr_group(struct device *dev, struct sensor_template_group *tg,
 				 (*t)->dev_attr.attr.name, tg->base + i);
 			if ((*t)->s2) {
 				a2 = &su->u.a2;
+				sysfs_attr_init(&a2->dev_attr.attr);
 				a2->dev_attr.attr.name = su->name;
 				a2->nr = (*t)->u.s.nr + i;
 				a2->index = (*t)->u.s.index;
@@ -1032,6 +1036,7 @@ nct6775_create_attr_group(struct device *dev, struct sensor_template_group *tg,
 				*attrs = &a2->dev_attr.attr;
 			} else {
 				a = &su->u.a1;
+				sysfs_attr_init(&a->dev_attr.attr);
 				a->dev_attr.attr.name = su->name;
 				a->index = (*t)->u.index + i;
 				a->dev_attr.attr.mode =
@@ -3571,8 +3576,8 @@ static int nct6775_probe(struct platform_device *pdev)
 		data->REG_FAN_PULSES = NCT6776_REG_FAN_PULSES;
 		data->FAN_PULSE_SHIFT = NCT6775_FAN_PULSE_SHIFT;
 		data->REG_FAN_TIME[0] = NCT6775_REG_FAN_STOP_TIME;
-		data->REG_FAN_TIME[1] = NCT6775_REG_FAN_STEP_DOWN_TIME;
-		data->REG_FAN_TIME[2] = NCT6775_REG_FAN_STEP_UP_TIME;
+		data->REG_FAN_TIME[1] = NCT6776_REG_FAN_STEP_UP_TIME;
+		data->REG_FAN_TIME[2] = NCT6776_REG_FAN_STEP_DOWN_TIME;
 		data->REG_TOLERANCE_H = NCT6776_REG_TOLERANCE_H;
 		data->REG_PWM[0] = NCT6775_REG_PWM;
 		data->REG_PWM[1] = NCT6775_REG_FAN_START_OUTPUT;
@@ -3643,8 +3648,8 @@ static int nct6775_probe(struct platform_device *pdev)
 		data->REG_FAN_PULSES = NCT6779_REG_FAN_PULSES;
 		data->FAN_PULSE_SHIFT = NCT6775_FAN_PULSE_SHIFT;
 		data->REG_FAN_TIME[0] = NCT6775_REG_FAN_STOP_TIME;
-		data->REG_FAN_TIME[1] = NCT6775_REG_FAN_STEP_DOWN_TIME;
-		data->REG_FAN_TIME[2] = NCT6775_REG_FAN_STEP_UP_TIME;
+		data->REG_FAN_TIME[1] = NCT6776_REG_FAN_STEP_UP_TIME;
+		data->REG_FAN_TIME[2] = NCT6776_REG_FAN_STEP_DOWN_TIME;
 		data->REG_TOLERANCE_H = NCT6776_REG_TOLERANCE_H;
 		data->REG_PWM[0] = NCT6775_REG_PWM;
 		data->REG_PWM[1] = NCT6775_REG_FAN_START_OUTPUT;
@@ -3721,8 +3726,8 @@ static int nct6775_probe(struct platform_device *pdev)
 		data->REG_FAN_PULSES = NCT6779_REG_FAN_PULSES;
 		data->FAN_PULSE_SHIFT = NCT6775_FAN_PULSE_SHIFT;
 		data->REG_FAN_TIME[0] = NCT6775_REG_FAN_STOP_TIME;
-		data->REG_FAN_TIME[1] = NCT6775_REG_FAN_STEP_DOWN_TIME;
-		data->REG_FAN_TIME[2] = NCT6775_REG_FAN_STEP_UP_TIME;
+		data->REG_FAN_TIME[1] = NCT6776_REG_FAN_STEP_UP_TIME;
+		data->REG_FAN_TIME[2] = NCT6776_REG_FAN_STEP_DOWN_TIME;
 		data->REG_TOLERANCE_H = NCT6776_REG_TOLERANCE_H;
 		data->REG_PWM[0] = NCT6775_REG_PWM;
 		data->REG_PWM[1] = NCT6775_REG_FAN_START_OUTPUT;
