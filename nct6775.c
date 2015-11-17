@@ -78,6 +78,16 @@ static const char * const nct6775_device_names[] = {
 	"nct6793",
 };
 
+static const char * const nct6775_sio_names[] __initconst = {
+	"NCT6106D",
+	"NCT6775F",
+	"NCT6776D/F",
+	"NCT6779D",
+	"NCT6791D",
+	"NCT6792D",
+	"NCT6793D",
+};
+
 static unsigned short force_id;
 module_param(force_id, ushort, 0);
 MODULE_PARM_DESC(force_id, "Override the detected device ID");
@@ -4168,16 +4178,6 @@ static struct platform_driver nct6775_driver = {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 13, 0)
 	.remove		= nct6775_remove,
 #endif
-};
-
-static const char * const nct6775_sio_names[] __initconst = {
-	"NCT6106D",
-	"NCT6775F",
-	"NCT6776D/F",
-	"NCT6779D",
-	"NCT6791D",
-	"NCT6792D",
-	"NCT6793D",
 };
 
 /* nct6775_find() looks for a '627 in the Super-I/O config space */
