@@ -4177,6 +4177,7 @@ static const char * const nct6775_sio_names[] __initconst = {
 	"NCT6779D",
 	"NCT6791D",
 	"NCT6792D",
+	"NCT6793D",
 };
 
 /* nct6775_find() looks for a '627 in the Super-I/O config space */
