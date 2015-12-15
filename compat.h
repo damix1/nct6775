@@ -20,6 +20,7 @@ u8 vid_which_vrm(void)
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 12, 0)
+#if !(defined RHEL_MAJOR && RHEL_MAJOR == 7)
 #if !(defined RHEL_MAJOR && RHEL_MAJOR == 6 && RHEL_MINOR >= 7)
 static int sysfs_create_groups(struct kobject *kobj,
 			       const struct attribute_group **groups)
@@ -52,7 +53,9 @@ static void sysfs_remove_groups(struct kobject *kobj,
 	for (i = 0; groups[i]; i++)
 		sysfs_remove_group(kobj, groups[i]);
 }
+#endif
 
+#if !(defined RHEL_MAJOR && RHEL_MAJOR == 7)
 #if !(defined RHEL_MAJOR && RHEL_MAJOR == 6 && RHEL_MINOR >= 7)
 static inline int __must_check PTR_ERR_OR_ZERO(__force const void *ptr)
 {
@@ -61,6 +64,7 @@ static inline int __must_check PTR_ERR_OR_ZERO(__force const void *ptr)
 	else
 		return 0;
 }
+#endif
 #endif
 #endif
 
