@@ -230,4 +230,8 @@ module_exit(__driver##_exit);
 #define pr_warn_ratelimited pr_warning_ratelimited
 #endif
 
+#ifndef sysfs_attr_init
+#define sysfs_attr_init(attr) do {} while (0)
+#endif
+
 #endif /* __COMPAT_H */
