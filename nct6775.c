@@ -40,7 +40,7 @@
  * nct6791d    15      6       6       2+6    0xc800 0xc1    0x5ca3
  * nct6792d    15      6       6       2+6    0xc910 0xc1    0x5ca3
  * nct6793d    15      6       6       2+6    0xd120 0xc1    0x5ca3
- * nct6795d    15?     6?      6?      2+6?   0xd350 0xc1    0x5ca3
+ * nct6795d    14      6       6       2+6    0xd350 0xc1    0x5ca3
  *
  * #temp lists the number of monitored temperature sources (first value) plus
  * the number of directly connectable temperature sensors (second value).
@@ -109,6 +109,7 @@ MODULE_PARM_DESC(fan_debounce, "Enable debouncing for fan RPM signal");
 #define NCT6775_LD_ACPI		0x0a
 #define NCT6775_LD_HWM		0x0b
 #define NCT6775_LD_VID		0x0d
+#define NCT6775_LD_12		0x12
 
 #define SIO_REG_LDSEL		0x07	/* Logical device select */
 #define SIO_REG_DEVID		0x20	/* Device ID (2 bytes) */
@@ -660,7 +661,43 @@ static const char *const nct6793_temp_label[] = {
 };
 
 #define NCT6793_TEMP_MASK	0xbfff037e
-#define NCT6795_TEMP_MASK	0xbfff037e	/* probably incorrect */
+
+static const char *const nct6795_temp_label[] = {
+	"",
+	"SYSTIN",
+	"CPUTIN",
+	"AUXTIN0",
+	"AUXTIN1",
+	"AUXTIN2",
+	"AUXTIN3",
+	"",
+	"SMBUSMASTER 0",
+	"SMBUSMASTER 1",
+	"SMBUSMASTER 2",
+	"SMBUSMASTER 3",
+	"SMBUSMASTER 4",
+	"SMBUSMASTER 5",
+	"SMBUSMASTER 6",
+	"SMBUSMASTER 7",
+	"PECI Agent 0",
+	"PECI Agent 1",
+	"PCH_CHIP_CPU_MAX_TEMP",
+	"PCH_CHIP_TEMP",
+	"PCH_CPU_TEMP",
+	"PCH_MCH_TEMP",
+	"PCH_DIM0_TEMP",
+	"PCH_DIM1_TEMP",
+	"PCH_DIM2_TEMP",
+	"PCH_DIM3_TEMP",
+	"BYTE_TEMP0",
+	"BYTE_TEMP1",
+	"PECI Agent 0 Calibration",
+	"PECI Agent 1 Calibration",
+	"",
+	"Virtual_TEMP"
+};
+
+#define NCT6795_TEMP_MASK	0xbfffff7e
 
 /* NCT6102D/NCT6106D specific data */
 
@@ -3412,6 +3449,8 @@ nct6775_check_fan_inputs(struct nct6775_data *data)
 		pwm5pin = false;
 		pwm6pin = false;
 	} else {	/* NCT6779D, NCT6791D, NCT6792D, NCT6793D, NCT6795D */
+		int regval_1b, regval_2a, regval_eb;
+
 		regval = superio_inb(sioreg, 0x1c);
 
 		fan3pin = !(regval & (1 << 5));
@@ -3422,17 +3461,44 @@ nct6775_check_fan_inputs(struct nct6775_data *data)
 		pwm4pin = !(regval & (1 << 1));
 		pwm5pin = !(regval & (1 << 2));
 
-		fan4min = fan4pin;
+		regval = superio_inb(sioreg, 0x2d);
+		switch (data->kind) {
+		case nct6791:
+		case nct6792:
+			fan6pin = regval & (1 << 1);
+			pwm6pin = regval & (1 << 0);
+			break;
+		case nct6793:
+		case nct6795:
+			regval_1b = superio_inb(sioreg, 0x1b);
+			regval_2a = superio_inb(sioreg, 0x2a);
 
-		if (data->kind == nct6791 || data->kind == nct6792 ||
-		    data->kind == nct6793 || data->kind == nct6795) {
-			regval = superio_inb(sioreg, 0x2d);
-			fan6pin = (regval & (1 << 1));
-			pwm6pin = (regval & (1 << 0));
-		} else {	/* NCT6779D */
+			if (!pwm5pin)
+				pwm5pin = regval & (1 << 7);
+			fan6pin = regval & (1 << 1);
+			pwm6pin = regval & (1 << 0);
+			if (!fan5pin)
+				fan5pin = regval_1b & (1 << 5);
+
+			superio_select(sioreg, NCT6775_LD_12);
+			regval_eb = superio_inb(sioreg, 0xeb);
+			if (!fan5pin)
+				fan5pin = regval_eb & (1 << 5);
+			if (!pwm5pin)
+				pwm5pin = (regval_eb & (1 << 4)) &&
+					   !(regval_2a & (1 << 0));
+			if (!fan6pin)
+				fan6pin = regval_eb & (1 << 3);
+			if (!pwm6pin)
+				pwm6pin = regval_eb & (1 << 2);
+			break;
+		default:	/* NCT6779D */
 			fan6pin = false;
 			pwm6pin = false;
+			break;
 		}
+
+		fan4min = fan4pin;
 	}
 
 	/* fan 1 and 2 (0x03) are always present */
@@ -3831,7 +3897,8 @@ static int nct6775_probe(struct platform_device *pdev)
 			data->temp_label = nct6793_temp_label;
 			data->temp_mask = NCT6793_TEMP_MASK;
 			break;
-		case nct6795:	/* unknown */
+		case nct6795:
+			data->temp_label = nct6795_temp_label;
 			data->temp_mask = NCT6795_TEMP_MASK;
 			break;
 		}
