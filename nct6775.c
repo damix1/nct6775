@@ -375,9 +375,16 @@ static const u16 NCT6775_REG_TEMP_ALTERNATE[32] = {
 	[15] = 0x664,
 };
 
-static const u16 NCT6775_REG_TEMP_CRIT[ARRAY_SIZE(nct6775_temp_label) - 1]
-	= { 0, 0, 0, 0, 0xa00, 0xa01, 0xa02, 0xa03, 0xa04, 0xa05, 0xa06,
-	    0xa07 };
+static const u16 NCT6775_REG_TEMP_CRIT[32] = {
+	[4] = 0xa00,
+	[5] = 0xa01,
+	[6] = 0xa02,
+	[7] = 0xa03,
+	[8] = 0xa04,
+	[9] = 0xa05,
+	[10] = 0xa06,
+	[11] = 0xa07
+};
 
 /* NCT6776 specific data */
 
@@ -921,7 +928,7 @@ struct nct6775_data {
 	u8 temp_src[NUM_TEMP];
 	u16 reg_temp_config[NUM_TEMP];
 	const char * const *temp_label;
-	int temp_mask;
+	u32 temp_mask;
 
 	u16 REG_CONFIG;
 	u16 REG_VBAT;
