@@ -4126,7 +4126,7 @@ static int nct6775_probe(struct platform_device *pdev)
 	 * is set.
 	 */
 	for (i = 0; i < 32; i++) {
-		if (!(data->temp_mask & BIT(i)))
+		if (!(data->temp_mask & BIT(i + 1)))
 			continue;
 		if (!reg_temp_alternate[i])
 			continue;
