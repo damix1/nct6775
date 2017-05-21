@@ -62,6 +62,7 @@
 #include <linux/bitops.h>
 #include <linux/dmi.h>
 #include <linux/io.h>
+#include <linux/debugfs.h>
 #include "lm75.h"
 #include "compat.h"
 
@@ -1069,6 +1070,88 @@ struct nct6775_sio_data {
 	int sioreg;
 	enum kinds kind;
 };
+
+#ifdef CONFIG_DEBUG_FS
+
+static u16 nct6775_read_temp(struct nct6775_data *data, u16 reg);
+static u16 nct6775_read_value(struct nct6775_data *data, u16 reg);
+
+static const char *temp_attr_names[5] = {
+	"input",
+	"max",
+	"hyst",
+	"crit",
+	"lcrit",
+};
+
+static int nct6775_seq_show(struct seq_file *s, void *v)
+{
+	struct device *dev = (struct device *)s->private;
+	struct nct6775_data *data = dev_get_drvdata(dev);
+	int i, j;
+
+	seq_printf(s, "Temperatures:\n");
+	for (i = 0; i < NUM_TEMP; i++) {
+		if (!(data->have_temp & BIT(i)))
+			continue;
+		seq_printf(s, "  temp%d [source %d, %s]:\n", i + 1,
+			   data->temp_src[i],
+			   data->temp_label[data->temp_src[i]]);
+		for (j = 0; j < ARRAY_SIZE(data->reg_temp); j++) {
+			if (data->reg_temp[j][i]) {
+				seq_printf(s, "    %s: reg=0x%x val=0x%x cached 0x%x\n",
+					   temp_attr_names[j],
+					   data->reg_temp[j][i],
+					   nct6775_read_temp(data, data->reg_temp[j][i]),
+					   (u16)data->temp[j][i]);
+			}
+		}
+	}
+	seq_printf(s, "Temperature sources:\n");
+	for (i = 0; i < data->num_temp_alarms; i++) {
+		seq_printf(s, "  index %d register 0x%x: val=0x%x\n",
+			   i, data->REG_TEMP_SOURCE[i],
+			   nct6775_read_value(data, data->REG_TEMP_SOURCE[i]) & 0x1f);
+	}
+	return 0;
+}
+
+static int nct6775_debug_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, nct6775_seq_show, inode->i_private);
+}
+
+static const struct file_operations nct6775_debug_operations = {
+	.open		= nct6775_debug_open,
+	.llseek		= seq_lseek,
+	.read		= seq_read,
+	.release	= single_release,
+};
+
+static void nct6775_debugfs_exit(void *data)
+{
+        debugfs_remove_recursive(data);
+}
+
+static int nct6775_debugfs_init(struct device *dev)
+{
+	struct dentry *rootdir;
+
+	rootdir = debugfs_create_dir(dev_name(dev), NULL);
+	if (!rootdir)
+		return -ENOMEM;
+
+	devm_add_action(dev, nct6775_debugfs_exit, rootdir);
+
+	debugfs_create_file("registers", S_IFREG | 0444, rootdir,
+			    dev, &nct6775_debug_operations);
+
+	return 0;
+}
+
+#else
+static int nct6775_debugfs_init(struct device *dev) { return 0; }
+#endif
 
 struct sensor_device_template {
 	struct device_attribute dev_attr;
@@ -4270,6 +4353,8 @@ static int nct6775_probe(struct platform_device *pdev)
 #else
 	hwmon_dev = devm_hwmon_device_register_with_groups(dev, data->name,
 							   data, data->groups);
+	if (!IS_ERR(hwmon_dev))
+		nct6775_debugfs_init(hwmon_dev);
 #endif
 	return PTR_ERR_OR_ZERO(hwmon_dev);
 }
