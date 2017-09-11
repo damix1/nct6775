@@ -41,7 +41,7 @@
  * nct6792d    15      6       6       2+6    0xc910 0xc1    0x5ca3
  * nct6793d    15      6       6       2+6    0xd120 0xc1    0x5ca3
  * nct6795d    14      6       6       2+6    0xd350 0xc1    0x5ca3
- * nct6796d    14      7       7       2+6    0xd350 0xc1    0x5ca3
+ * nct6796d    14      7       7       2+6    0xd420 0xc1    0x5ca3
  *
  * #temp lists the number of monitored temperature sources (first value) plus
  * the number of directly connectable temperature sensors (second value).
@@ -4058,8 +4058,8 @@ static int nct6775_probe(struct platform_device *pdev)
 			data->temp_mask = NCT6795_TEMP_MASK;
 			break;
 		case nct6796:
-			data->temp_label = nct6795_temp_label;
-			data->temp_mask = NCT6795_TEMP_MASK;
+			data->temp_label = nct6796_temp_label;
+			data->temp_mask = NCT6796_TEMP_MASK;
 			break;
 		}
 
@@ -4488,7 +4488,8 @@ static int __maybe_unused nct6775_resume(struct device *dev)
 		superio_outb(sioreg, SIO_REG_ENABLE, data->sio_reg_enable);
 
 	if (data->kind == nct6791 || data->kind == nct6792 ||
-	    data->kind == nct6793 || data->kind == nct6795)
+	    data->kind == nct6793 || data->kind == nct6795 ||
+	    data->kind == nct6796)
 		nct6791_enable_io_mapping(sioreg);
 
 	superio_exit(sioreg);
@@ -4621,7 +4622,8 @@ static int __init nct6775_find(int sioaddr, struct nct6775_sio_data *sio_data)
 	}
 
 	if (sio_data->kind == nct6791 || sio_data->kind == nct6792 ||
-	    sio_data->kind == nct6793 || sio_data->kind == nct6795)
+	    sio_data->kind == nct6793 || sio_data->kind == nct6795 ||
+	    sio_data->kind == nct6796)
 		nct6791_enable_io_mapping(sioaddr);
 
 	superio_exit(sioaddr);
